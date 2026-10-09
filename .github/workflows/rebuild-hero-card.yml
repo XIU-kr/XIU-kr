@@ -1,0 +1,52 @@
+name: Rebuild Hero Card
+
+# Regenerates assets/readme-hero.svg from scripts/build-hero.py and the
+# sources in assets/src (XIU art, app icons, fonts). Triggers:
+#   • every push to main that touches the script or its sources
+#   • manual dispatch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-hero.py'
+      - 'assets/src/**'
+      - '.github/workflows/rebuild-hero-card.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-hero-card
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install "Pillow==12.3.0" "fonttools==4.66.1" "brotli==1.2.0"
+
+      - name: Rebuild hero SVG
+        run: python scripts/build-hero.py
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- assets/readme-hero.svg README.md; then
+            echo "Hero card already up to date — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/readme-hero.svg README.md
+          git commit -m "chore: rebuild hero card"
+          git push
