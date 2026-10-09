@@ -1,16 +1,17 @@
 name: Rebuild Hero Card
 
-# Regenerates assets/readme-hero.svg by re-fetching the GitHub
-# avatar and re-embedding it. Triggers:
-#   • every push to main (catches content edits in build-hero.py)
-#   • daily at 03:00 UTC (catches profile avatar changes)
+# Regenerates assets/readme-hero.svg from scripts/build-hero.py and the
+# sources in assets/src (XIU art, app icons, fonts). Triggers:
+#   • every push to main that touches the script or its sources
 #   • manual dispatch
 
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 3 * * *'
+    paths:
+      - 'scripts/build-hero.py'
+      - 'assets/src/**'
+      - '.github/workflows/rebuild-hero-card.yml'
   workflow_dispatch:
 
 permissions:
@@ -33,7 +34,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install "Pillow==10.4.0"
+        run: pip install "Pillow==12.3.0" "fonttools==4.66.1" "brotli==1.2.0"
 
       - name: Rebuild hero SVG
         run: python scripts/build-hero.py
